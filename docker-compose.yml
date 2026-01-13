@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: hikers
+      POSTGRES_PASSWORD: hikers_dev
+      POSTGRES_DB: hikers_development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hikers -d hikers_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USER: hikers
+      DATABASE_PASSWORD: hikers_dev
+      DATABASE_NAME: hikers_development
+      RAILS_ENV: development
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_data:
+  bundle_cache:

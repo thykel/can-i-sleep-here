@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Czech Bivouacking & Camping Rules</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; }
+    #map { height: 100vh; width: 100%; }
+    .info-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      max-width: 350px;
+    }
+    .info-panel h2 { margin-bottom: 10px; font-size: 16px; }
+    .info-panel h3 { margin: 12px 0 6px 0; font-size: 14px; border-top: 1px solid #eee; padding-top: 10px; }
+    .verdict-allowed { color: #22c55e; }
+    .verdict-gray { color: #f59e0b; }
+    .verdict-forbidden { color: #ef4444; }
+    .verdict-unsupported { color: #6b7280; }
+    .loading { color: #666; font-style: italic; }
+    .coords { font-family: monospace; font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+    .area-name { font-size: 15px; font-weight: 600; color: #1f2937; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+    .area-name .category { font-weight: normal; font-size: 12px; color: #6b7280; }
+    .area-name.military { color: #dc2626; }
+    .subtitle { font-weight: normal; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="info-panel">
+    <h2>Click anywhere to check rules</h2>
+    <div id="result"></div>
+  </div>
+  <script>
+    // Czechia bounds
+    const czechiaBounds = [[48.55, 12.09], [51.06, 18.87]];
+
+    const map = L.map('map', {
+      maxBounds: czechiaBounds,
+      maxBoundsViscosity: 1.0,
+      minZoom: 7
+    }).setView([49.8, 15.5], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+    let areaLayers = [];
+
+    async function checkLocation(lat, lng, updateUrl = true) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<p class="loading">Checking...</p>';
+
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lng]).addTo(map);
+
+      // Clear previous area polygons
+      areaLayers.forEach(layer => map.removeLayer(layer));
+      areaLayers = [];
+
+      // Update URL
+      if (updateUrl) {
+        const url = new URL(window.location);
+        url.searchParams.set('lat', lat.toFixed(6));
+        url.searchParams.set('lng', lng.toFixed(6));
+        history.replaceState(null, '', url);
+      }
+
+      try {
+        const response = await fetch(`/check?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`);
+        const data = await response.json();
+
+        let html = `<p class="coords">${lat.toFixed(6)}, ${lng.toFixed(6)}</p>`;
+
+        // Brief message for locations outside Czechia
+        if (data.verdict === 'unsupported') {
+          html += `<p class="area-name" style="color: #6b7280;">Outside Czechia</p>`;
+          html += `<p><small>${data.explanation}</small></p>`;
+          resultDiv.innerHTML = html;
+          return;
+        }
+
+        // Area name(s) prominently below GPS
+        if (data.military_area) {
+          html += `<p class="area-name military">${data.military_area.name}</p>`;
+
+          // Draw military area polygons
+          if (data.military_area.coords && data.military_area.coords.length > 0) {
+            data.military_area.coords.forEach(polygonCoords => {
+              if (polygonCoords.length > 0) {
+                const polygon = L.polygon(polygonCoords, {
+                  color: '#dc2626',
+                  weight: 2,
+                  fillOpacity: 0.2
+                }).addTo(map);
+                areaLayers.push(polygon);
+              }
+            });
+          }
+        } else if (data.areas.length > 0) {
+          const areaNames = data.areas.map(area => {
+            const category = area.czech_category || `class ${area.protect_class}`;
+            return `${area.name} <span class="category">(${category})</span>`;
+          }).join('<br>');
+          html += `<p class="area-name">${areaNames}</p>`;
+
+          // Draw area polygons on map
+          data.areas.forEach(area => {
+            if (area.coords && area.coords.length > 0) {
+              const color = parseInt(area.protect_class) <= 3 ? '#ef4444' : '#f59e0b';
+              area.coords.forEach(polygonCoords => {
+                if (polygonCoords.length > 0) {
+                  const polygon = L.polygon(polygonCoords, {
+                    color: color,
+                    weight: 2,
+                    fillOpacity: 0.15
+                  }).addTo(map);
+                  areaLayers.push(polygon);
+                }
+              });
+            }
+          });
+        } else {
+          html += `<p class="area-name" style="color: #6b7280;">No protected area</p>`;
+        }
+
+        // Bivouacking section (sleeping without tent)
+        html += '<h3>Bivouacking <span class="subtitle">(nocování)</span></h3>';
+        html += `<p><strong>Verdict:</strong> <span class="verdict-${data.verdict}">${data.verdict.toUpperCase()}</span></p>`;
+        html += `<p><small>${data.explanation}</small></p>`;
+
+        // Camping section (with tent) - generally stricter
+        html += '<h3>Camping <span class="subtitle">(táboření)</span></h3>';
+        const inChko = data.areas?.some(a => a.czech_category === 'CHKO');
+        if (data.verdict === 'forbidden') {
+          html += `<p><strong>Verdict:</strong> <span class="verdict-forbidden">FORBIDDEN</span></p>`;
+          html += `<p><small>If bivouacking is forbidden, camping with a tent is also forbidden.</small></p>`;
+        } else if (data.military_area) {
+          html += `<p><strong>Verdict:</strong> <span class="verdict-forbidden">FORBIDDEN</span></p>`;
+          html += `<p><small>Military areas are strictly off-limits.</small></p>`;
+        } else if (inChko) {
+          html += `<p><strong>Verdict:</strong> <span class="verdict-forbidden">FORBIDDEN</span></p>`;
+          html += `<p><small>In CHKO, only bivouacking is allowed. Camping with a tent is not permitted.</small></p>`;
+        } else {
+          html += `<p><strong>Verdict:</strong> <span class="verdict-gray">PERMISSION REQUIRED</span></p>`;
+          html += `<p><small>Camping requires landowner permission. Check local regulations.</small></p>`;
+        }
+
+        resultDiv.innerHTML = html;
+      } catch (err) {
+        resultDiv.innerHTML = '<p style="color:red">Error checking location</p>';
+      }
+    }
+
+    map.on('click', (e) => checkLocation(e.latlng.lat, e.latlng.lng));
+
+    // Load from URL params on page load
+    const params = new URLSearchParams(window.location.search);
+    const urlLat = parseFloat(params.get('lat'));
+    const urlLng = parseFloat(params.get('lng'));
+    if (urlLat && urlLng) {
+      map.setView([urlLat, urlLng], 12);
+      checkLocation(urlLat, urlLng, false);
+    }
+  </script>
+</body>
+</html>

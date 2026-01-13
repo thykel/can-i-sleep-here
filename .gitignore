@@ -1,0 +1,70 @@
+# Ignore bundler config.
+/.bundle
+
+# Ignore all environment files.
+/.env*
+!/.env*.erb
+
+# Ignore all logfiles and tempfiles.
+/log/*
+!/log/.keep
+/tmp/
+
+# Ignore storage (uploaded files in development and any SQLite databases).
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/
+!/tmp/storage/.keep
+
+# Ignore SQLite databases.
+*.sqlite3
+*.sqlite3-*
+
+# Ignore master key for decrypting credentials and more.
+/config/master.key
+/config/credentials/*.key
+
+# Ignore bootsnap cache.
+/tmp/cache/bootsnap*
+
+# Ignore node_modules.
+/node_modules
+
+# Ignore yarn files.
+/yarn-error.log
+yarn-debug.log*
+.yarn-integrity
+
+# Ignore assets.
+/public/assets
+/public/packs
+/public/packs-test
+/app/assets/builds/*
+!/app/assets/builds/.keep
+
+# Ignore CI service artifacts.
+/.byebug_history
+
+# Ignore IDE/editor files.
+/.idea
+/.vscode
+*.swp
+*.swo
+*~
+
+# Ignore Claude Code local settings.
+/.claude/settings.local.json
+
+# Ignore Kamal secrets.
+/.kamal/secrets
+
+# Ignore OS files.
+.DS_Store
+Thumbs.db
+
+# Ignore coverage reports.
+/coverage
+
+# Ignore vendor bundle.
+/vendor/bundle

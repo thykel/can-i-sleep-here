@@ -1,0 +1,30 @@
+# Protected areas fixtures
+# Note: geometry is set dynamically in tests since YAML can't represent RGeo objects
+
+chko_brdy:
+  name: "CHKO Brdy"
+  protect_class: "5"
+  protection_title: "Chráněná krajinná oblast"
+  country: "CZ"
+  osm_id: "relation/67882"
+
+np_sumava:
+  name: "Národní park Šumava"
+  protect_class: "2"
+  protection_title: "národní park"
+  country: "CZ"
+  osm_id: "relation/123456"
+
+npr_strict:
+  name: "NPR Test Reserve"
+  protect_class: "1a"
+  protection_title: "Národní přírodní rezervace"
+  country: "CZ"
+  osm_id: "relation/789"
+
+pr_nature_reserve:
+  name: "PR Test Reserve"
+  protect_class: "4"
+  protection_title: "Přírodní rezervace"
+  country: "CZ"
+  osm_id: "relation/456"

@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: hikers
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: hikers_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hikers -d hikers_production"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: .
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USER: hikers
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_NAME: hikers_production
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+    ports:
+      - "127.0.0.1:3847:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
