@@ -1,9 +1,22 @@
 # TODO
 
-## Features
+## UI
+
+- [ ] Add an option to collapse the UI modal
+- [ ] Add a zone loading indicator
+
+## Map
 
 - [ ] Detect camping grounds
-- [ ] Add an option to collapse the UI modal
+- [ ] Render tourist trails
+- [ ] Add links to nocoviste where available
+
+## Rules & Legal
+
+- [ ] Add better copies for unprotected areas
+- [ ] Add references to the current laws
+- [ ] Add campfire rules
+- [ ] Review "Gray" verdicts for prirodni parky
 
 ## Data Sources
 
