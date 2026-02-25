@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   get "check", to: "check#index"
 
+  root to: redirect("/map")
   get "map", to: "map#index"
   get "map/areas", to: "map#areas"
 
