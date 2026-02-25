@@ -278,17 +278,29 @@ namespace :import do
     puts "  Total in DB: #{MilitaryArea.count}"
   end
 
-  desc "Import CHKO/NP zone GeoJSON (data/zones.geojson)"
+  desc "Import CHKO/NP zone GeoJSON (downloads from AOPK if not present)"
   task zones: :environment do
+    require "net/http"
+
+    zones_url = "https://hub.arcgis.com/api/v3/datasets/1f82e49b9bf5418a82f076e5f1f7e9cc_1/downloads/data?format=geojson&spatialRefId=4326&where=1%3D1"
     file_path = ENV["ZONES_PATH"] || Rails.root.join("data", "zones.geojson")
 
-    unless File.exist?(file_path)
-      puts "Error: File not found at #{file_path}"
-      exit 1
+    geojson = if File.exist?(file_path)
+      puts "Reading zones GeoJSON from #{file_path}..."
+      JSON.parse(File.read(file_path))
+    else
+      puts "Downloading zones GeoJSON from AOPK..."
+      uri = URI(zones_url)
+      response = nil
+      5.times do
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", read_timeout: 120) { |h| h.get(uri.request_uri) }
+        break unless response.is_a?(Net::HTTPRedirection)
+        uri = URI(response["Location"])
+      end
+      raise "Download failed: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+      puts "Downloaded #{(response.body.bytesize / 1_048_576.0).round(1)} MB"
+      JSON.parse(response.body)
     end
-
-    puts "Reading zones GeoJSON from #{file_path}..."
-    geojson = JSON.parse(File.read(file_path))
     features = geojson["features"] || []
 
     puts "Found #{features.count} zone features"

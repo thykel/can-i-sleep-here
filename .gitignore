@@ -69,9 +69,10 @@ Thumbs.db
 # Ignore vendor bundle.
 /vendor/bundle
 
-# Ignore large GeoJSON data files that are re-importable.
-# Re-import with: rake import:zones
-/data/zones.geojson
-
 # Ignore local Docker Compose overrides.
 docker-compose.override.yml
+
+# Ignore large GeoJSON data files — auto-downloaded by import tasks.
+# rake import:zones      → downloads from AOPK (hub.arcgis.com)
+# rake import:fire_spots → fetches from Overpass API
+/data/zones.geojson
