@@ -2,26 +2,28 @@
 
 ## UI
 
-- [ ] Add an option to collapse the UI modal
-- [ ] Add a zone loading indicator
+- [ ] Add quick links to the clicked location in mapy.cz / Google Maps / OSM
+- [ ] Handle city/village boundaries (municipal ordinances may apply)
 
 ## Map
 
-- [ ] Detect camping grounds
-- [ ] Render tourist trails
+- [ ] Detect water areas and show swimming rules
+- [ ] Detect camping grounds and propose nearby ones
 - [ ] Add links to nocoviste where available
 
 ## Rules & Legal
 
-- [ ] Add better copies for unprotected areas
-- [ ] Add references to the current laws
-- [ ] Add campfire rules
-- [ ] Review "Gray" verdicts for prirodni parky
+- [ ] Write out the full ruleset + decision tree into its own document
+  - Use it as the authoritative source referenced from code
+  - Include paragraph citations with anchor URLs to zakonyprolidi.cz
+- [ ] Law citation URL anchors (user to provide)
 
 ## Data Sources
 
+- [ ] Pin down specific data sources (OSM + gis-aopkcr.opendata.arcgis.com)
+- [ ] Automate refreshing those sources
 - [ ] Consider switching to https://gis-aopkcr.opendata.arcgis.com/
 
-## Internationalization
+## Advanced features
 
-- [ ] Add Czech translations
+- [ ] Route support (check rules along a hiking route, not just a single point)

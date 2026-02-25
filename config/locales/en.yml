@@ -1,31 +1,66 @@
-# Files in the config/locales directory are used for internationalization and
-# are automatically loaded by Rails. If you want to use locales other than
-# English, add the necessary files in this directory.
-#
-# To use the locales, use `I18n.t`:
-#
-#     I18n.t "hello"
-#
-# In views, this is aliased to just `t`:
-#
-#     <%= t("hello") %>
-#
-# To use a different locale, set it with `I18n.locale`:
-#
-#     I18n.locale = :es
-#
-# This would use the information in config/locales/es.yml.
-#
-# To learn more about the API, please read the Rails Internationalization guide
-# at https://guides.rubyonrails.org/i18n.html.
-#
-# Be aware that YAML interprets the following case-insensitive strings as
-# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
-# must be quoted to be interpreted as strings. For example:
-#
-#     en:
-#       "yes": yup
-#       enabled: "ON"
-
 en:
-  hello: "Hello world"
+  camping_rules:
+    categories:
+      npr: 'National Nature Reserve (NPR — Národní přírodní rezervace). Bivouacking and camping are strictly prohibited under <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§34 of Act 114/1992 Coll.</a> Entry may require a special permit.'
+      npp: 'National Natural Monument (NPP — Národní přírodní památka). Bivouacking and camping are strictly prohibited under <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§36 of Act 114/1992 Coll.</a>'
+      np: 'National Park (NP — Národní park). Overnight stays are only permitted at designated spots (nocovište) per <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§16 of Act 114/1992 Coll.</a> NP Šumava and KRNAP have marked nocovište on their official maps.'
+      pr: 'Nature Reserve (PR — Přírodní rezervace). Bivouacking and camping are prohibited under <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§34 of Act 114/1992 Coll.</a>'
+      pp: 'Natural Monument (PP — Přírodní památka). Bivouacking and camping are prohibited under <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§36 of Act 114/1992 Coll.</a>'
+      prirodni_park: 'Regional Landscape Park (Přírodní park). Bivouacking is not restricted here — these areas (<a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§12 of Act 114/1992 Coll.</a>) protect landscape character but do not prohibit overnight stays. Leave no trace.'
+      chko: 'Protected Landscape Area (CHKO — Chráněná krajinná oblast). Bivouacking is tolerated based on the 2008 Hyťha court precedent and <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§26 of Act 114/1992 Coll.</a> Stay one night, arrive late, leave early, leave no trace.'
+      chko_zone_restricted: 'CHKO Zone I — movement is restricted to marked paths. Bivouacking off-trail is not feasible in practice. Check the official CHKO map for allowed routes.'
+      chko_zone_tolerated: 'CHKO Zone %{zona}. Bivouacking is tolerated based on the 2008 Hyťha court precedent and <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§26 of Act 114/1992 Coll.</a> Stay one night, arrive late, leave early, leave no trace. Camping with a tent is forbidden throughout the entire CHKO.'
+    iucn:
+      strict_reserve: "Strict Nature Reserve. Bivouacking prohibited."
+      wilderness: "Wilderness Area. Bivouacking prohibited."
+      national_park: "National Park. Use designated overnight spots (nocovište) only."
+      nature_monument: "Nature Monument. Stricter rules apply — avoid camping here."
+      nature_reserve: "Nature Reserve. Stricter rules apply — avoid camping here."
+      landscape: "Protected Landscape Area (CHKO). Bivouacking is tolerated per the 2008 Hyťha precedent."
+    default: "No specific rules found for this area. Check local regulations before staying overnight."
+    outside_protected: "Outside protected areas. Bivouacking in forests and open countryside is tolerated under Czech legal practice, confirmed by the 2008 Hyťha court precedent. On private land, the owner's consent is recommended. In towns and villages, municipal ordinances may apply."
+    outside_czechia: "Outside Czechia. Rules for this country are not currently supported."
+    military: 'Military Training Area (Vojenský újezd). Entry is strictly prohibited without authorisation from the military authority. Trespassing is a criminal offense under <a href="https://www.zakonyprolidi.cz/cs/1999-222" target="_blank">Act 222/1999 Coll.</a>'
+    campfire:
+      forbidden: 'Open fire is prohibited in this protected area. Gas stoves are permitted — AOPK does not classify them as "lighting a fire".'
+      np: 'Open fire in National Parks is only permitted at designated fire spots (ohniště). Gas stoves are permitted.'
+      chko: 'Open fire is forbidden throughout the CHKO outside built-up areas and designated spots (<a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§26 of Act 114/1992 Coll.</a>). Gas stoves are permitted — AOPK does not classify them as "lighting a fire".'
+      general: '• Open fire in forests or within 50 m of forest edge: prohibited (<a href="https://www.zakonyprolidi.cz/cs/1995-289" target="_blank">§20 Act 289/1995 Coll.</a>)<br>• Open fire beyond 50 m from forest edge: landowner permission required<br>• Check for local or seasonal fire bans<br>• Gas stoves: permitted anywhere'
+      military: "Military areas are strictly off-limits."
+  map:
+    title: "Can I Sleep There?"
+    click_to_check: "Click anywhere to check rules"
+    checking: "Checking..."
+    error: "Error checking location"
+    outside_czechia: "Outside Czechia"
+    no_protected_area: "No protected area"
+    trails: "🥾 Trails"
+    language_toggle: "🇬🇧 EN"
+    details: "🔍 Details"
+    verdict_label: "Verdict:"
+    sections:
+      bivouacking: "Bivouacking"
+      bivouacking_subtitle: "(nocování)"
+      camping: "Camping with tent"
+      camping_subtitle: "(táboření)"
+      campfire: "Campfire"
+      campfire_subtitle: "(oheň)"
+    verdicts:
+      allowed: "ALLOWED"
+      forbidden: "FORBIDDEN"
+      gray: "TOLERATED"
+      unsupported: "N/A"
+    camping:
+      forbidden_if_bivouac: "If bivouacking is forbidden, camping with a tent is also forbidden."
+      military: "Military areas are strictly off-limits."
+      chko: "In CHKO, only bivouacking is allowed — camping with a tent is not permitted."
+      permission_required_label: "PERMISSION REQUIRED"
+      permission_required_text: "Camping requires landowner permission. Check local regulations."
+    summary:
+      bivouacking: "Bivouac"
+      camping: "Camping"
+      campfire: "Campfire"
+    zone: "Zone"
+    fire_spots:
+      nearby: "Designated fire spots nearby:"
+      unnamed: "unnamed spot"

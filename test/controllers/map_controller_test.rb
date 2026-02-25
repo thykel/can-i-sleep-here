@@ -16,7 +16,7 @@ class MapControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal "text/html", response.media_type
     assert_includes response.body, "<!DOCTYPE html>"
-    assert_includes response.body, "Czech Bivouacking & Camping Rules"
+    assert_includes response.body, "Can I Sleep There?"
     assert_includes response.body, "leaflet"
   end
 

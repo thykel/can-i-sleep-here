@@ -1,0 +1,66 @@
+cs:
+  camping_rules:
+    categories:
+      npr: 'Národní přírodní rezervace (NPR). Bivakování a táboření jsou přísně zakázány dle <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§34 zákona 114/1992 Sb.</a> Vstup může vyžadovat zvláštní povolení.'
+      npp: 'Národní přírodní památka (NPP). Bivakování a táboření jsou přísně zakázány dle <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§36 zákona 114/1992 Sb.</a>'
+      np: 'Národní park (NP). Přenocování je povoleno pouze na vyhrazených nocovištích dle <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§16 zákona 114/1992 Sb.</a> NP Šumava a KRNAP mají nocovistě zaznačena na svých mapách.'
+      pr: 'Přírodní rezervace (PR). Bivakování a táboření jsou zakázány dle <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§34 zákona 114/1992 Sb.</a>'
+      pp: 'Přírodní památka (PP). Bivakování a táboření jsou zakázány dle <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§36 zákona 114/1992 Sb.</a>'
+      prirodni_park: 'Přírodní park. Bivakování zde není omezeno — tyto oblasti (<a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§12 zákona 114/1992 Sb.</a>) chrání ráz krajiny, ale nezakazují přenocování. Zanechte místo čisté.'
+      chko: 'Chráněná krajinná oblast (CHKO). Bivakování je tolerováno na základě precedentu Hyťha z roku 2008 a <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§26 zákona 114/1992 Sb.</a> Přespěte jednu noc, přijďte pozdě, odejděte brzy, zanechte místo čisté.'
+      chko_zone_restricted: 'CHKO zóna I — pohyb je omezen na značené cesty. Bivakování mimo cesty není v praxi možné. Prostudujte oficiální mapu CHKO pro povolené trasy.'
+      chko_zone_tolerated: 'CHKO zóna %{zona}. Bivakování je tolerováno na základě precedentu Hyťha z roku 2008 a <a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§26 zákona 114/1992 Sb.</a> Přespěte jednu noc, přijďte pozdě, odejděte brzy, zanechte místo čisté. Táboření se stanem je zakázáno na celém území CHKO.'
+    iucn:
+      strict_reserve: "Přísná přírodní rezervace. Bivakování zakázáno."
+      wilderness: "Divočina. Bivakování zakázáno."
+      national_park: "Národní park. Přenocování pouze na vyhrazených nocovištích."
+      nature_monument: "Přírodní památka. Platí přísnější pravidla — vyhněte se táboření."
+      nature_reserve: "Přírodní rezervace. Platí přísnější pravidla — vyhněte se táboření."
+      landscape: "Chráněná krajinná oblast (CHKO). Bivakování je tolerováno dle precedentu Hyťha z roku 2008."
+    default: "Pro tuto oblast nebyla nalezena žádná specifická pravidla. Před přenocováním ověřte místní předpisy."
+    outside_protected: "Mimo chráněné oblasti. Bivakování v lesích a volné krajině je tolerováno dle české právní praxe, potvrzené soudním precedentem Hyťha z roku 2008. Na soukromém pozemku se doporučuje souhlas vlastníka. V obcích mohou platit obecní vyhlášky."
+    outside_czechia: "Mimo Českou republiku. Pravidla pro tuto zemi nejsou aktuálně podporována."
+    military: 'Vojenský újezd. Vstup je přísně zakázán bez povolení vojenského úřadu. Neoprávněný vstup je trestným činem dle <a href="https://www.zakonyprolidi.cz/cs/1999-222" target="_blank">zákona 222/1999 Sb.</a>'
+    campfire:
+      forbidden: 'Otevřený oheň je v této chráněné oblasti zakázán. Plynový vařič je povolen — AOPK jej nepovažuje za „rozdělávání ohně".'
+      np: 'Otevřený oheň je v národních parcích povolen pouze na vyhrazených ohništích. Plynový vařič je povolen.'
+      chko: 'Otevřený oheň je na celém území CHKO zakázán mimo zastavěná území obcí a vyhrazená místa (<a href="https://www.zakonyprolidi.cz/cs/1992-114" target="_blank">§26 zákona 114/1992 Sb.</a>). Plynový vařič je povolen — AOPK jej nepovažuje za „rozdělávání ohně".'
+      general: '• Otevřený oheň v lese nebo do 50 m od jeho okraje: zakázáno (<a href="https://www.zakonyprolidi.cz/cs/1995-289" target="_blank">§20 zákona 289/1995 Sb.</a>)<br>• Otevřený oheň dále než 50 m od lesa: nutný souhlas vlastníka pozemku<br>• Zkontrolujte místní nebo sezónní zákazy ohně<br>• Plynový vařič: povolen kdekoli'
+      military: "Vojenský újezd — vstup přísně zakázán."
+  map:
+    title: "Můžu tam přespat?"
+    click_to_check: "Klikněte na mapu pro ověření pravidel"
+    checking: "Zjišťuji..."
+    error: "Chyba při zjišťování lokace"
+    outside_czechia: "Mimo Českou republiku"
+    no_protected_area: "Mimo chráněné oblasti"
+    trails: "🥾 Trasy"
+    language_toggle: "🇨🇿 CZ"
+    details: "🔍 Detaily"
+    verdict_label: "Výsledek:"
+    sections:
+      bivouacking: "Bivakování"
+      bivouacking_subtitle: "(nocování bez stanu)"
+      camping: "Táboření se stanem"
+      camping_subtitle: "(táboření)"
+      campfire: "Oheň"
+      campfire_subtitle: "(oheň)"
+    verdicts:
+      allowed: "POVOLENO"
+      forbidden: "ZAKÁZÁNO"
+      gray: "TOLEROVÁNO"
+      unsupported: "N/A"
+    camping:
+      forbidden_if_bivouac: "Pokud je bivakování zakázáno, táboření se stanem je také zakázáno."
+      military: "Vojenský újezd — vstup přísně zakázán."
+      chko: "V CHKO je povoleno pouze bivakování — táboření se stanem není povoleno."
+      permission_required_label: "VYŽADUJE POVOLENÍ"
+      permission_required_text: "Táboření vyžaduje souhlas vlastníka pozemku. Ověřte místní předpisy."
+    summary:
+      bivouacking: "Bivak"
+      camping: "Táboření"
+      campfire: "Oheň"
+    zone: "Zóna"
+    fire_spots:
+      nearby: "Ohniště v okolí:"
+      unnamed: "ohniště bez názvu"

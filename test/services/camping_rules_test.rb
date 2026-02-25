@@ -144,7 +144,7 @@ class CampingRulesTest < ActiveSupport::TestCase
   test "check_location returns unsupported verdict for coordinates outside Czechia" do
     result = CampingRules.check_location(52.52, 13.40) # Berlin
     assert_equal "unsupported", result[:verdict]
-    assert_includes result[:explanation], "outside Czechia"
+    assert_includes result[:explanation], "Outside Czechia"
     assert_empty result[:areas]
   end
 

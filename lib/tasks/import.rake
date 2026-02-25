@@ -1,10 +1,12 @@
 namespace :import do
-  desc "Import all GeoJSON data (country boundary, protected areas, national parks, military areas)"
+  desc "Import all GeoJSON data (country boundary, protected areas, national parks, military areas, zones, fire spots)"
   task all: :environment do
     Rake::Task["import:country_boundary"].invoke
     Rake::Task["import:protected_areas"].invoke
     Rake::Task["import:national_parks"].invoke
     Rake::Task["import:military_areas"].invoke
+    Rake::Task["import:zones"].invoke
+    Rake::Task["import:fire_spots"].invoke
     puts "\nAll imports complete!"
   end
 
@@ -274,6 +276,165 @@ namespace :import do
     puts "  Skipped: #{skipped}"
     puts "  Errors: #{errors}"
     puts "  Total in DB: #{MilitaryArea.count}"
+  end
+
+  desc "Import CHKO/NP zone GeoJSON (data/zones.geojson)"
+  task zones: :environment do
+    file_path = ENV["ZONES_PATH"] || Rails.root.join("data", "zones.geojson")
+
+    unless File.exist?(file_path)
+      puts "Error: File not found at #{file_path}"
+      exit 1
+    end
+
+    puts "Reading zones GeoJSON from #{file_path}..."
+    geojson = JSON.parse(File.read(file_path))
+    features = geojson["features"] || []
+
+    puts "Found #{features.count} zone features"
+    puts "Clearing existing zone data..."
+    ProtectedZone.delete_all
+
+    imported = 0
+    skipped = 0
+    errors = 0
+
+    features.each do |feature|
+      props = feature["properties"] || {}
+      geometry_data = feature["geometry"]
+
+      unless geometry_data
+        skipped += 1
+        next
+      end
+
+      # Normalise to MultiPolygon
+      geometry_data = case geometry_data["type"]
+      when "Polygon"
+        { "type" => "MultiPolygon", "coordinates" => [ geometry_data["coordinates"] ] }
+      when "MultiPolygon"
+        geometry_data
+      else
+        skipped += 1
+        next
+      end
+
+      geometry_json = geometry_data.to_json
+
+      begin
+        ActiveRecord::Base.connection.exec_query(
+          <<~SQL,
+            INSERT INTO protected_zones (kat, nazev, zona, objectid, geometry, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, ST_SetSRID(ST_GeomFromGeoJSON($5), 4326)::geography, NOW(), NOW())
+          SQL
+          "SQL",
+          [ props["KAT"], props["NAZEV"], props["ZONA"], props["OBJECTID"], geometry_json ]
+        )
+        imported += 1
+      rescue ActiveRecord::StatementInvalid, JSON::ParserError => e
+        puts "  Error importing #{props['NAZEV']} Zone #{props['ZONA']}: #{e.message}" if errors < 5
+        errors += 1
+      end
+    end
+
+    puts "\nImport complete!"
+    puts "  Imported: #{imported}"
+    puts "  Skipped:  #{skipped}"
+    puts "  Errors:   #{errors}"
+    puts "  Total in DB: #{ProtectedZone.count}"
+  end
+
+  desc "Import fire spots (ohniště) from Overpass API or FIRE_SPOTS_PATH file"
+  task fire_spots: :environment do
+    require "net/http"
+
+    # Overpass query — also usable at https://overpass-turbo.eu/
+    #
+    #   [out:json][timeout:90];
+    #   area['ISO3166-1'='CZ']->.cz;
+    #   (
+    #     node['leisure'='firepit'](area.cz);
+    #     node['amenity'='bbq']['access'!='private'](area.cz);
+    #     way['leisure'='firepit'](area.cz);
+    #     relation['leisure'='firepit'](area.cz);
+    #   );
+    #   out center tags;
+
+    overpass_query = <<~OVERPASS
+      [out:json][timeout:90];
+      area['ISO3166-1'='CZ']->.cz;
+      (
+        node['leisure'='firepit'](area.cz);
+        node['amenity'='bbq']['access'!='private'](area.cz);
+        way['leisure'='firepit'](area.cz);
+        relation['leisure'='firepit'](area.cz);
+      );
+      out center tags;
+    OVERPASS
+
+    file_path = ENV["FIRE_SPOTS_PATH"]
+
+    data = if file_path
+      puts "Reading fire spots from #{file_path}..."
+      raise "File not found: #{file_path}" unless File.exist?(file_path)
+      JSON.parse(File.read(file_path))
+    else
+      puts "Fetching fire spots from Overpass API..."
+      uri = URI("https://overpass-api.de/api/interpreter")
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.read_timeout = 120
+      req = Net::HTTP::Post.new(uri.path)
+      req.body = "data=#{URI.encode_www_form_component(overpass_query)}"
+      resp = http.request(req)
+      raise "Overpass API error #{resp.code}: #{resp.body.first(200)}" unless resp.is_a?(Net::HTTPSuccess)
+      JSON.parse(resp.body)
+    end
+
+    elements = data["elements"] || []
+    puts "Found #{elements.count} elements"
+    puts "Clearing existing fire spots..."
+    FireSpot.delete_all
+
+    imported = 0
+    skipped  = 0
+    errors   = 0
+
+    elements.each do |el|
+      lat = el["lat"] || el.dig("center", "lat")
+      lon = el["lon"] || el.dig("center", "lon")
+
+      unless lat && lon
+        skipped += 1
+        next
+      end
+
+      tags   = el["tags"] || {}
+      osm_id = "#{el['type']}/#{el['id']}"
+      name   = tags["name"]
+
+      begin
+        ActiveRecord::Base.connection.exec_query(
+          <<~SQL,
+            INSERT INTO fire_spots (osm_id, name, lat, lng, geometry, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($4, $3), 4326)::geography, NOW(), NOW())
+            ON CONFLICT (osm_id) DO NOTHING
+          SQL
+          "SQL",
+          [ osm_id, name, lat, lon ]
+        )
+        imported += 1
+      rescue ActiveRecord::StatementInvalid => e
+        puts "  Error importing #{osm_id}: #{e.message}" if errors < 5
+        errors += 1
+      end
+    end
+
+    puts "\nImport complete!"
+    puts "  Imported: #{imported}"
+    puts "  Skipped:  #{skipped}"
+    puts "  Errors:   #{errors}"
+    puts "  Total in DB: #{FireSpot.count}"
   end
 
   private

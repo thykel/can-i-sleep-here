@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Czech Bivouacking & Camping Rules</title>
+  <title>Can I Sleep There?</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕️</text></svg>">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,33 +16,139 @@
       top: 10px;
       right: 10px;
       background: white;
-      padding: 15px;
+      padding: 12px 15px;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       z-index: 1000;
       max-width: 350px;
+      width: 320px;
     }
-    .info-panel h2 { margin-bottom: 10px; font-size: 16px; }
+    .panel-header { display: flex; gap: 6px; align-items: center; }
+    .panel-header .icon-btn { flex: 1; text-align: center; }
+    .panel-body { border-top: 1px solid #eee; padding-top: 10px; margin-top: 8px; }
+    .panel-placeholder { font-size: 13px; color: #6b7280; text-align: center; padding: 2px 0 4px; }
+    .has-result .panel-placeholder { display: none; }
+    #collapse-summary {
+      display: none;
+      font-size: 12px;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+      border-top: 1px solid #eee;
+      padding: 6px 0;
+      margin-top: 8px;
+    }
+    .info-panel.collapsed.has-result #collapse-summary { display: flex; }
+    .icon-btn {
+      background: none;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #6b7280;
+      padding: 2px 7px;
+      line-height: 1.6;
+      white-space: nowrap;
+    }
+    .icon-btn:hover { color: #1f2937; background: #f9fafb; }
+    .icon-btn.active { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+    .info-panel.collapsed .panel-body { display: none; }
     .info-panel h3 { margin: 12px 0 6px 0; font-size: 14px; border-top: 1px solid #eee; padding-top: 10px; }
     .verdict-allowed { color: #22c55e; }
     .verdict-gray { color: #f59e0b; }
     .verdict-forbidden { color: #ef4444; }
     .verdict-unsupported { color: #6b7280; }
-    .loading { color: #666; font-style: italic; }
     .coords { font-family: monospace; font-size: 12px; color: #6b7280; margin-bottom: 4px; }
     .area-name { font-size: 15px; font-weight: 600; color: #1f2937; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
     .area-name .category { font-weight: normal; font-size: 12px; color: #6b7280; }
     .area-name.military { color: #dc2626; }
     .subtitle { font-weight: normal; font-size: 12px; color: #6b7280; }
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #6b7280;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading { color: #6b7280; font-style: italic; display: flex; align-items: center; gap: 4px; }
+    .info-panel a { color: inherit; text-decoration: underline; text-decoration-style: dotted; }
+    .info-panel a:hover { text-decoration-style: solid; }
+    .info-panel small { line-height: 1.8; }
+    .fire-spot-icon { font-size: 16px; line-height: 1; }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div class="info-panel">
-    <h2>Click anywhere to check rules</h2>
-    <div id="result"></div>
+  <div class="info-panel" id="info-panel">
+    <div class="panel-header">
+      <button class="icon-btn" id="lang-toggle">CS</button>
+      <button class="icon-btn active" id="collapse-btn">🔍 Details</button>
+      <button class="icon-btn" id="trail-toggle">Trails</button>
+    </div>
+    <div id="collapse-summary"></div>
+    <div class="panel-body">
+      <p id="panel-title" class="panel-placeholder">Click anywhere to check rules</p>
+      <div id="result"></div>
+    </div>
   </div>
   <script>
+    const TRANSLATIONS = {
+      en: <%= raw I18n.t('map', locale: :en).to_json %>,
+      cs: <%= raw I18n.t('map', locale: :cs).to_json %>
+    };
+
+    let currentLocale = localStorage.getItem('locale') ||
+      (navigator.language.startsWith('cs') ? 'cs' : 'en');
+    if (!TRANSLATIONS[currentLocale]) currentLocale = 'en';
+
+    let lastSummaryVerdicts = null;
+
+    function t(key) {
+      const keys = key.split('.');
+      let val = TRANSLATIONS[currentLocale];
+      for (const k of keys) { val = val?.[k]; }
+      return val ?? key;
+    }
+
+    function updateStaticUI() {
+      const isCollapsed = document.getElementById('info-panel').classList.contains('collapsed');
+      const collapseBtn = document.getElementById('collapse-btn');
+      collapseBtn.textContent = t('details');
+      collapseBtn.classList.toggle('active', !isCollapsed);
+      document.getElementById('lang-toggle').textContent = t('language_toggle');
+      document.getElementById('trail-toggle').textContent = t('trails');
+      document.getElementById('panel-title').textContent = t('click_to_check');
+      document.title = t('title');
+      if (lastSummaryVerdicts) updateCollapseSummary(...lastSummaryVerdicts);
+    }
+
+    function verdictEmoji(v) {
+      return { allowed: '✅', gray: '⚠️', forbidden: '❌', unsupported: '—' }[v] ?? '—';
+    }
+
+    function campingVerdict(data) {
+      if (data.verdict === 'forbidden' || data.military_area) return 'forbidden';
+      if (data.areas?.some(a => a.czech_category === 'CHKO')) return 'forbidden';
+      return 'gray';
+    }
+
+    function updateCollapseSummary(bivVerdict, campVerdict, fireVerdict) {
+      lastSummaryVerdicts = [bivVerdict, campVerdict, fireVerdict];
+      document.getElementById('collapse-summary').innerHTML =
+        `<span>${t('summary.bivouacking')} ${verdictEmoji(bivVerdict)}</span>` +
+        `<span>${t('summary.camping')} ${verdictEmoji(campVerdict)}</span>` +
+        `<span>${t('summary.campfire')} ${verdictEmoji(fireVerdict)}</span>`;
+      panel.classList.add('has-result');
+    }
+
+    updateStaticUI();
+
     // Czechia bounds
     const czechiaBounds = [[48.55, 12.09], [51.06, 18.87]];
 
@@ -58,10 +165,56 @@
 
     let marker = null;
     let areaLayers = [];
+    let trailLayer = null;
+    let lastCheckedLat = null;
+    let lastCheckedLng = null;
+
+    // Collapse toggle
+    const panel = document.getElementById('info-panel');
+    const collapseBtn = document.getElementById('collapse-btn');
+    collapseBtn.addEventListener('click', () => {
+      panel.classList.toggle('collapsed');
+      updateStaticUI();
+    });
+
+    // Language toggle
+    const langBtn = document.getElementById('lang-toggle');
+    langBtn.addEventListener('click', () => {
+      currentLocale = currentLocale === 'en' ? 'cs' : 'en';
+      localStorage.setItem('locale', currentLocale);
+      updateStaticUI();
+      if (lastCheckedLat !== null) {
+        checkLocation(lastCheckedLat, lastCheckedLng, false);
+      }
+    });
+
+    // Trail overlay toggle
+    const trailBtn = document.getElementById('trail-toggle');
+    trailBtn.addEventListener('click', () => {
+      if (trailLayer) {
+        map.removeLayer(trailLayer);
+        trailLayer = null;
+        trailBtn.classList.remove('active');
+      } else {
+        trailLayer = L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          opacity: 0.7,
+          attribution: '&copy; <a href="https://hiking.waymarkedtrails.org">Waymarked Trails</a>'
+        }).addTo(map);
+        trailBtn.classList.add('active');
+      }
+    });
+
+    function verdictLabel(v) {
+      return t(`verdicts.${v}`) || v.toUpperCase();
+    }
 
     async function checkLocation(lat, lng, updateUrl = true) {
+      lastCheckedLat = lat;
+      lastCheckedLng = lng;
+
       const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = '<p class="loading">Checking...</p>';
+      resultDiv.innerHTML = `<p class="loading"><span class="spinner"></span>${t('checking')}</p>`;
 
       if (marker) map.removeLayer(marker);
       marker = L.marker([lat, lng]).addTo(map);
@@ -79,16 +232,17 @@
       }
 
       try {
-        const response = await fetch(`/check?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`);
+        const response = await fetch(`/check?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}&locale=${currentLocale}`);
         const data = await response.json();
 
         let html = `<p class="coords">${lat.toFixed(6)}, ${lng.toFixed(6)}</p>`;
 
         // Brief message for locations outside Czechia
         if (data.verdict === 'unsupported') {
-          html += `<p class="area-name" style="color: #6b7280;">Outside Czechia</p>`;
+          html += `<p class="area-name" style="color: #6b7280;">${t('outside_czechia')}</p>`;
           html += `<p><small>${data.explanation}</small></p>`;
           resultDiv.innerHTML = html;
+          updateCollapseSummary('unsupported', 'unsupported', 'unsupported');
           return;
         }
 
@@ -112,7 +266,8 @@
         } else if (data.areas.length > 0) {
           const areaNames = data.areas.map(area => {
             const category = area.czech_category || `class ${area.protect_class}`;
-            return `${area.name} <span class="category">(${category})</span>`;
+            const zoneSuffix = area.chko_zone ? ` ${t('zone')} ${area.chko_zone}` : '';
+            return `${area.name} <span class="category">(${category}${zoneSuffix})</span>`;
           }).join('<br>');
           html += `<p class="area-name">${areaNames}</p>`;
 
@@ -125,7 +280,22 @@
                   const polygon = L.polygon(polygonCoords, {
                     color: color,
                     weight: 2,
-                    fillOpacity: 0.15
+                    fillOpacity: 0.08
+                  }).addTo(map);
+                  areaLayers.push(polygon);
+                }
+              });
+            }
+
+            // Draw zone polygon on top with verdict-based colour
+            if (area.chko_zone_coords && area.chko_zone_coords.length > 0) {
+              const zoneColor = area.chko_zone === 'I' ? '#ef4444' : '#22c55e';
+              area.chko_zone_coords.forEach(polygonCoords => {
+                if (polygonCoords.length > 0) {
+                  const polygon = L.polygon(polygonCoords, {
+                    color: zoneColor,
+                    weight: 2.5,
+                    fillOpacity: 0.2
                   }).addTo(map);
                   areaLayers.push(polygon);
                 }
@@ -133,34 +303,58 @@
             }
           });
         } else {
-          html += `<p class="area-name" style="color: #6b7280;">No protected area</p>`;
+          html += `<p class="area-name" style="color: #6b7280;">${t('no_protected_area')}</p>`;
         }
 
         // Bivouacking section (sleeping without tent)
-        html += '<h3>Bivouacking <span class="subtitle">(nocování)</span></h3>';
-        html += `<p><strong>Verdict:</strong> <span class="verdict-${data.verdict}">${data.verdict.toUpperCase()}</span></p>`;
+        html += `<h3>${t('sections.bivouacking')} <span class="subtitle">${t('sections.bivouacking_subtitle')}</span></h3>`;
+        html += `<p><strong>${t('verdict_label')}</strong> <span class="verdict-${data.verdict}">${verdictLabel(data.verdict)}</span></p>`;
         html += `<p><small>${data.explanation}</small></p>`;
 
-        // Camping section (with tent) - generally stricter
-        html += '<h3>Camping <span class="subtitle">(táboření)</span></h3>';
+        // Camping section (with tent) — generally stricter
+        html += `<h3>${t('sections.camping')} <span class="subtitle">${t('sections.camping_subtitle')}</span></h3>`;
         const inChko = data.areas?.some(a => a.czech_category === 'CHKO');
         if (data.verdict === 'forbidden') {
-          html += `<p><strong>Verdict:</strong> <span class="verdict-forbidden">FORBIDDEN</span></p>`;
-          html += `<p><small>If bivouacking is forbidden, camping with a tent is also forbidden.</small></p>`;
+          html += `<p><strong>${t('verdict_label')}</strong> <span class="verdict-forbidden">${t('verdicts.forbidden')}</span></p>`;
+          html += `<p><small>${t('camping.forbidden_if_bivouac')}</small></p>`;
         } else if (data.military_area) {
-          html += `<p><strong>Verdict:</strong> <span class="verdict-forbidden">FORBIDDEN</span></p>`;
-          html += `<p><small>Military areas are strictly off-limits.</small></p>`;
+          html += `<p><strong>${t('verdict_label')}</strong> <span class="verdict-forbidden">${t('verdicts.forbidden')}</span></p>`;
+          html += `<p><small>${t('camping.military')}</small></p>`;
         } else if (inChko) {
-          html += `<p><strong>Verdict:</strong> <span class="verdict-forbidden">FORBIDDEN</span></p>`;
-          html += `<p><small>In CHKO, only bivouacking is allowed. Camping with a tent is not permitted.</small></p>`;
+          html += `<p><strong>${t('verdict_label')}</strong> <span class="verdict-forbidden">${t('verdicts.forbidden')}</span></p>`;
+          html += `<p><small>${t('camping.chko')}</small></p>`;
         } else {
-          html += `<p><strong>Verdict:</strong> <span class="verdict-gray">PERMISSION REQUIRED</span></p>`;
-          html += `<p><small>Camping requires landowner permission. Check local regulations.</small></p>`;
+          html += `<p><strong>${t('verdict_label')}</strong> <span class="verdict-gray">${t('camping.permission_required_label')}</span></p>`;
+          html += `<p><small>${t('camping.permission_required_text')}</small></p>`;
         }
 
+        // Campfire section
+        html += `<h3>${t('sections.campfire')} <span class="subtitle">${t('sections.campfire_subtitle')}</span></h3>`;
+        const cv = data.campfire_verdict || 'gray';
+        html += `<p><strong>${t('verdict_label')}</strong> <span class="verdict-${cv}">${verdictLabel(cv)}</span></p>`;
+        html += `<p><small>${data.campfire_explanation}</small></p>`;
+
+        // Nearby designated fire spots
+        if (data.fire_spots && data.fire_spots.length > 0) {
+          const spotsList = data.fire_spots.map(s => {
+            const dist = s.distance_m < 1000 ? `${s.distance_m} m` : `${(s.distance_m / 1000).toFixed(1)} km`;
+            return `${s.name || t('fire_spots.unnamed')} (${dist})`;
+          }).join(', ');
+          html += `<p><small>🔥 ${t('fire_spots.nearby')} ${spotsList}</small></p>`;
+
+          data.fire_spots.forEach(spot => {
+            const icon = L.divIcon({ html: '🔥', className: 'fire-spot-icon', iconSize: [20, 20], iconAnchor: [10, 10] });
+            const m = L.marker([spot.lat, spot.lng], { icon })
+              .bindPopup(spot.name || t('fire_spots.unnamed'))
+              .addTo(map);
+            areaLayers.push(m);
+          });
+        }
+
+        updateCollapseSummary(data.verdict, campingVerdict(data), data.campfire_verdict || 'gray');
         resultDiv.innerHTML = html;
       } catch (err) {
-        resultDiv.innerHTML = '<p style="color:red">Error checking location</p>';
+        resultDiv.innerHTML = `<p style="color:red">${t('error')}</p>`;
       }
     }
 

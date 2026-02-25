@@ -49,7 +49,7 @@ class CampingCheckFlowTest < ActionDispatch::IntegrationTest
     assert_equal "5", area["protect_class"]
 
     # Verify explanation is helpful
-    assert_includes result["explanation"], "allowed"
+    assert_includes result["explanation"], "tolerated"
     assert_includes result["explanation"], "leave no trace"
   end
 
@@ -61,7 +61,7 @@ class CampingCheckFlowTest < ActionDispatch::IntegrationTest
 
     result = json_response
     assert_equal "forbidden", result["verdict"]
-    assert_includes result["explanation"], "prohibited"
+    assert_includes result["explanation"], "designated spots"
 
     area = result["areas"].first
     assert_equal "Národní park Šumava", area["name"]
@@ -89,14 +89,14 @@ class CampingCheckFlowTest < ActionDispatch::IntegrationTest
     result = json_response
     assert_equal "allowed", result["verdict"]
     assert_empty result["areas"]
-    assert_includes result["explanation"], "No protected area"
+    assert_includes result["explanation"], "Outside protected areas"
   end
 
   test "full flow: check map loads and areas endpoint works" do
     # User visits the map
     get "/map"
     assert_response :success
-    assert_includes response.body, "Czech Bivouacking & Camping Rules"
+    assert_includes response.body, "Can I Sleep There?"
 
     # Map fetches areas
     get "/map/areas"
